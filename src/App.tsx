@@ -12,6 +12,7 @@ import {
 } from './game/draft.ts'
 import { chemistry } from './game/chemistry.ts'
 import { simulateSeason, simSeedFor } from './game/sim.ts'
+import { verdict } from './game/verdict.ts'
 
 /**
  * Slices 2+3 UI: spin -> pick x6 (live chemistry badges) -> season sim ->
@@ -57,7 +58,9 @@ export default function App() {
 
   const season = useMemo(() => {
     if (!draft || !isComplete(draft)) return null
-    return simulateSeason(draft.picks, simSeedFor(draft.seed, draft.picks))
+    const simSeed = simSeedFor(draft.seed, draft.picks)
+    const result = simulateSeason(draft.picks, simSeed)
+    return { result, report: verdict(draft.picks, result, simSeed) }
   }, [draft])
 
   if (error) return <main>Failed to load player data: {error}</main>
@@ -105,12 +108,10 @@ export default function App() {
       {season ? (
         <section>
           <h2>
-            {season.wins}-{season.losses}. {season.tier}.
+            {season.result.wins}-{season.result.losses}. {season.result.tier}.
           </h2>
-          <p>{season.weeks.map((w) => (w.win ? 'W' : 'L')).join(' ')}</p>
-          <p>
-            <em>Scouting report coming in slice 4.</em>
-          </p>
+          <p>{season.result.weeks.map((w) => (w.win ? 'W' : 'L')).join(' ')}</p>
+          <p>{season.report}</p>
           <button onClick={replay}>RUN IT BACK</button>
         </section>
       ) : (

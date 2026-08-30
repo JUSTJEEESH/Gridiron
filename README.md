@@ -3,8 +3,8 @@
 Mobile-web NFL roster-drafting game. Vite + React + TypeScript, static.
 Spec: [GRIDIRON-build-spec.md](./GRIDIRON-build-spec.md).
 
-**Status: slices 1 (data pipeline), 2 (core loop), and 3 (sim + tuning)
-shipped.** The verdict engine (slice 4) and the design pass (slice 5) are
+**Status: slices 1 (data pipeline), 2 (core loop), 3 (sim + tuning), and
+4 (verdict engine) shipped.** The design pass and share card (slice 5) are
 next.
 
 ## Commands
@@ -15,6 +15,24 @@ npm run data:build:offline   # rebuild from cache only, no network
 npm test                     # vitest — percentile, tags, cohorts, loaders
 npm run dev / build / preview
 ```
+
+## The verdict engine (slice 4)
+
+`src/game/verdict.ts` — rules to phrases, no LLM. Facts are extracted from
+the season: every fired chemistry rule, plus stat-derived observations
+(star receivers with a caretaker QB, a 30-point gap between the pass rush
+and the secondary in either direction, a weak link at ≤40, balance at 65+
+everywhere, a 95+ QB, and dedicated 17-0 / 16-1 lines). Each fact carries a
+hand-written pool of 4-6 variants in `VERDICT_POOLS` — those lines are the
+product; edit them there. Assembly picks 2-3 fragments by magnitude:
+sub-14-win seasons lead with the failure, 14+ lead with credit plus the one
+flaw; thin rosters pad from tier fallbacks. Variant choice is seeded, so a
+run's verdict is deterministic and replays exactly.
+
+Guardrails against saying something stupid: templates are placeholder-
+checked by test (no `{}` can leak, fuzzed over 300 rosters), and the deep-
+ball credit skips scrub "deep threats" so a fragment never praises the same
+player the weak-link fragment indicts.
 
 ## The simulation (slice 3)
 
