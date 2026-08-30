@@ -1,0 +1,92 @@
+# GRIDIRON
+
+Mobile-web NFL roster-drafting game. Vite + React + TypeScript, static.
+Spec: [GRIDIRON-build-spec.md](./GRIDIRON-build-spec.md).
+
+**Status: slice 1 (data pipeline) shipped.** No UI, no simulation yet.
+
+## Commands
+
+```
+npm run data:build           # pull nflverse (cached in .cache/), rebuild players.json
+npm run data:build:offline   # rebuild from cache only, no network
+npm test                     # vitest — percentile, tags, cohorts, loaders
+npm run dev / build / preview
+```
+
+## The data pipeline (slice 1)
+
+`scripts/build-players.ts` builds `public/data/players.json`:
+
+1. **Pull** nflverse season-aggregated regular-season player stats, one CSV
+   per season, probing forward from 1999 until seasons stop existing
+   (`stats_player` release of nflverse-data). Downloads cache in `.cache/`.
+2. **Merge** the hand-curated pre-1999 legends CSV
+   (`data/curated/pre1999.csv`, see its [README](./data/curated/README.md) —
+   header-only stub until the curation pass).
+3. **Score** every player-season as a percentile (0–100, mean-rank, ties
+   share) within its **(position, season)** cohort — the spec's era
+   normalization. Curated rows use (position, decade) cohorts.
+4. **Derive tags** from stats only. **Validate** (schema, score range,
+   duplicates, cohort sizes) and write a versioned JSON.
+
+### Positions and cohort floors
+
+| Slot | nflverse mapping | Cohort floor |
+|---|---|---|
+| QB | position_group QB | 100+ attempts |
+| RB | position_group RB | 50+ carries |
+| WR | position_group WR | 30+ targets (20+ receptions where targets are missing) |
+| EDGE | DE, OLB, or any LB with 8+ sacks (early seasons label 3-4 edge rushers plain "LB") | 6+ games, 2+ sacks |
+| DB | position_group DB (CB/FS/SS/S/SAF/DB across eras) | 6+ games, 4+ INTs+PDs |
+
+### Ranking stat
+
+- **QB/RB/WR:** nflverse's standard fantasy points (league-standard
+  aggregation, ships in the source data; computed with the same formula for
+  curated rows).
+- **EDGE:** equal-weight cohort z-scores of sacks, QB hits, TFL, forced
+  fumbles.
+- **DB:** equal-weight cohort z-scores of INTs, passes defended, solo
+  tackles, forced fumbles.
+
+Only the ordering matters — scores are percentiles of these values.
+
+### Tags (spec section 5; nothing hand-authored)
+
+| Tag | Rule |
+|---|---|
+| `gunslinger` | QB: yards/attempt above the season-cohort median |
+| `high_volume` | QB: attempts above the season-cohort median |
+| `workhorse` | RB: more than 300 carries |
+| `vertical` | WR: yards/reception above the season-cohort median |
+| `alpha` | WR: target share above 25% |
+| `ball_hawk` | DB: interceptions above the season-cohort median |
+| `elite` | any: score ≥ 90 |
+
+The last three follow section 5's derivation pattern to cover what section
+6's chemistry rules reference ("high-volume passing QB", "ball-hawk DB",
+"elite EDGE"). "Vertical QB" in the chemistry table is `gunslinger`.
+
+### Known data caveats
+
+- **Targets missing 2003–2008** upstream: WR eligibility falls back to
+  receptions, target fields are omitted for those seasons, and `alpha`
+  cannot derive there (stray fragments are scrubbed rather than tagged).
+- **Pre-1999 percentiles are legends-relative** — see
+  [data/curated/README.md](./data/curated/README.md). Rescaling is a slice 3
+  tuning decision.
+
+### players.json
+
+```
+{ schemaVersion, dataVersion, generatedAt, seasons: {min,max},
+  counts: {total, nflverse, curated}, players: [
+    { id, name, pos, team, season, games, score, tags, src, stats } ] }
+```
+
+`dataVersion` is a content hash — it changes iff the data changes. `team` is
+the modern franchise code (nflverse pre-normalizes relocations). `stats`
+carries the position-relevant raw numbers so every score and tag is
+auditable. Currently 1999–2025, ~13.8k player-seasons, ~3 MB raw / ~0.4 MB
+gzipped. Regenerating is a script, not a release; the file is committed.
