@@ -1,4 +1,4 @@
-import type { Position, RawRow, StatLine } from './types.ts'
+import type { Position, RawRow, StatLine } from '../shared/types.ts'
 import { percentiles, zscores } from './percentile.ts'
 
 /**

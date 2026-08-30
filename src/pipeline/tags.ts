@@ -1,4 +1,4 @@
-import type { Position, RawRow, Tag } from './types.ts'
+import type { Position, RawRow, Tag } from '../shared/types.ts'
 import { median } from './percentile.ts'
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { assemble, buildNflverseSeasons, dataVersion, sanitizeTargetGap, scoreCohort, validate } from './build.ts'
 import { makeRaw } from './fixtures.ts'
-import type { RawRow } from './types.ts'
+import type { RawRow } from '../shared/types.ts'
 
 describe('scoreCohort', () => {
   it('produces complete PlayerSeason records with scores and tags in sync', () => {

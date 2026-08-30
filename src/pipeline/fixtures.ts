@@ -1,4 +1,4 @@
-import type { RawRow } from './types.ts'
+import type { RawRow } from '../shared/types.ts'
 
 /** Synthetic test fixture — not real player data. */
 export function makeRaw(overrides: Partial<RawRow> = {}): RawRow {

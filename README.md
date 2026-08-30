@@ -3,7 +3,8 @@
 Mobile-web NFL roster-drafting game. Vite + React + TypeScript, static.
 Spec: [GRIDIRON-build-spec.md](./GRIDIRON-build-spec.md).
 
-**Status: slice 1 (data pipeline) shipped.** No UI, no simulation yet.
+**Status: slices 1 (data pipeline) and 2 (core loop) shipped.** No
+simulation yet — the reveal is a placeholder until slice 3.
 
 ## Commands
 
@@ -13,6 +14,29 @@ npm run data:build:offline   # rebuild from cache only, no network
 npm test                     # vitest — percentile, tags, cohorts, loaders
 npm run dev / build / preview
 ```
+
+## The core loop (slice 2)
+
+Spin franchise + era → pick one player → repeat for the six fixed slots
+(QB, RB, WR1, WR2, EDGE, DB) → placeholder reveal → one-tap replay. One
+team re-roll (new franchise, same era) and one era re-roll (same franchise,
+new era) per run.
+
+- `src/game/rng.ts` — deterministic seeded RNG. Draw *i* of stream `seed`
+  is a pure function of `(seed, i)`, so state serializes as
+  `{ seed, cursor }` and replays are exact. The slice 3 sim uses this same
+  module.
+- `src/game/data.ts` — loads `players.json`, indexes pools by
+  franchise × era × position. Eras are decade buckets derived from the
+  seasons present (pre-1999 curation will add older eras automatically).
+  A spin's options are the pool deduped to each player's best season, top 8
+  by score, minus already-picked players.
+- `src/game/draft.ts` — pure state machine: `newDraft`, `pickPlayer`,
+  `rerollTeam`, `rerollEra`. Spins re-draw internally until the current
+  slot's pool is non-empty; a run is deterministic from (seed, choices).
+  `?seed=x` in the URL reproduces a run.
+- `src/App.tsx` — deliberately unstyled UI over the state machine
+  ("ugly is fine"); the design pass is slice 5.
 
 ## The data pipeline (slice 1)
 

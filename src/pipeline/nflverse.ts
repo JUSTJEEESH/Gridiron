@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile, access } from 'node:fs/promises'
 import { join } from 'node:path'
 import { num, parseCsvRecords } from './csv.ts'
-import type { RawRow } from './types.ts'
+import type { RawRow } from '../shared/types.ts'
 
 /**
  * nflverse season-aggregated player stats (regular season), one CSV per

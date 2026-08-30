@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { num, parseCsvRecords } from './csv.ts'
-import { POSITIONS, type Position, type RawRow } from './types.ts'
+import { POSITIONS, type Position, type RawRow } from '../shared/types.ts'
 import { NFLVERSE_FIRST_SEASON } from './nflverse.ts'
 
 /**

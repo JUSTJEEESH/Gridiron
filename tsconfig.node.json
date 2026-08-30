@@ -17,5 +17,5 @@
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo"
   },
-  "include": ["vite.config.ts", "scripts", "src/pipeline"]
+  "include": ["vite.config.ts", "scripts", "src/pipeline", "src/shared"]
 }

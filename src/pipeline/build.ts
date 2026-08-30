@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import type { PlayerSeason, PlayersFile, Position, RawRow } from './types.ts'
-import { POSITIONS, SCHEMA_VERSION } from './types.ts'
+import type { PlayerSeason, PlayersFile, Position, RawRow } from '../shared/types.ts'
+import { POSITIONS, SCHEMA_VERSION } from '../shared/types.ts'
 import { cohortScores, isEligible, toPosition, toStatLine } from './score.ts'
 import { cohortMedians, deriveTags } from './tags.ts'
 import type { CuratedRow } from './curated.ts'

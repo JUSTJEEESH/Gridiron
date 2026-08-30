@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import { fetchSeasonCsv, parseSeasonCsv, NFLVERSE_FIRST_SEASON } from '../src/pipeline/nflverse.ts'
 import { loadCuratedCsv } from '../src/pipeline/curated.ts'
 import { assemble, buildCurated, buildNflverseSeasons, validate } from '../src/pipeline/build.ts'
-import { POSITIONS, type RawRow } from '../src/pipeline/types.ts'
+import { POSITIONS, type RawRow } from '../src/shared/types.ts'
 
 const ROOT = join(import.meta.dirname, '..')
 const CACHE_DIR = join(ROOT, '.cache', 'nflverse')
