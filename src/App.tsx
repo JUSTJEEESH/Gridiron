@@ -10,11 +10,14 @@ import {
   SLOTS,
   type DraftState,
 } from './game/draft.ts'
+import { chemistry } from './game/chemistry.ts'
+import { simulateSeason, simSeedFor } from './game/sim.ts'
 
 /**
- * Slice 2 UI: the bare core loop. Spin -> pick x6 -> roster -> replay.
- * Deliberately unstyled ("ugly is fine"); the reveal here is a placeholder
- * until the sim lands in slice 3. Replay is one tap, no confirmation.
+ * Slices 2+3 UI: spin -> pick x6 (live chemistry badges) -> season sim ->
+ * replay. Deliberately unstyled ("ugly is fine"); the verdict paragraph is
+ * slice 4, the design pass and reveal animation are slice 5. Direction and
+ * reason of chemistry are shown, the formula never is. Replay is one tap.
  */
 
 function randomSeed(): string {
@@ -24,6 +27,10 @@ function randomSeed(): string {
 function initialSeed(): string {
   const fromUrl = new URLSearchParams(window.location.search).get('seed')
   return fromUrl && fromUrl.length > 0 ? fromUrl : randomSeed()
+}
+
+function fmt(v: number): string {
+  return v > 0 ? `+${v}` : `${v}`
 }
 
 export default function App() {
@@ -40,6 +47,18 @@ export default function App() {
   useEffect(() => {
     if (index && !draft) setDraft(newDraft(index, initialSeed()))
   }, [index, draft])
+
+  const partial = useMemo(() => {
+    if (!draft) return null
+    // Picks in slot order, undefined for unfilled slots (chemistry evaluates live).
+    const slots = SLOTS.map((_, i) => draft.picks[i])
+    return chemistry(slots)
+  }, [draft])
+
+  const season = useMemo(() => {
+    if (!draft || !isComplete(draft)) return null
+    return simulateSeason(draft.picks, simSeedFor(draft.seed, draft.picks))
+  }, [draft])
 
   if (error) return <main>Failed to load player data: {error}</main>
   if (!file || !index || !draft) return <main>Loading player data…</main>
@@ -62,9 +81,7 @@ export default function App() {
             <li key={slot.label}>
               <strong>{slot.label}</strong>:{' '}
               {pick
-                ? `${pick.name} — ${pick.team} ${pick.season} (${pick.score})${
-                    pick.tags.length ? ` [${pick.tags.join(', ')}]` : ''
-                  }`
+                ? `${pick.name} — ${pick.team} ${pick.season}`
                 : i === draft.slot
                   ? '← picking now'
                   : '—'}
@@ -73,10 +90,27 @@ export default function App() {
         })}
       </ol>
 
-      {isComplete(draft) ? (
+      {partial && partial.fired.length > 0 && (
+        <p>
+          {partial.fired.map((r) => (
+            <span key={r.id} style={{ marginRight: '1em' }}>
+              <strong>
+                {fmt(r.value)} {r.label}
+              </strong>
+            </span>
+          ))}
+        </p>
+      )}
+
+      {season ? (
         <section>
-          <h2>Draft complete</h2>
-          <p>Season simulation arrives in slice 3.</p>
+          <h2>
+            {season.wins}-{season.losses}. {season.tier}.
+          </h2>
+          <p>{season.weeks.map((w) => (w.win ? 'W' : 'L')).join(' ')}</p>
+          <p>
+            <em>Scouting report coming in slice 4.</em>
+          </p>
           <button onClick={replay}>RUN IT BACK</button>
         </section>
       ) : (

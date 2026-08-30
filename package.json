@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "data:build": "tsx scripts/build-players.ts",
-    "data:build:offline": "tsx scripts/build-players.ts --offline"
+    "data:build:offline": "tsx scripts/build-players.ts --offline",
+    "sim:tune": "tsx scripts/tune-sim.ts"
   },
   "dependencies": {
     "react": "^18.3.1",

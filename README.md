@@ -3,8 +3,9 @@
 Mobile-web NFL roster-drafting game. Vite + React + TypeScript, static.
 Spec: [GRIDIRON-build-spec.md](./GRIDIRON-build-spec.md).
 
-**Status: slices 1 (data pipeline) and 2 (core loop) shipped.** No
-simulation yet — the reveal is a placeholder until slice 3.
+**Status: slices 1 (data pipeline), 2 (core loop), and 3 (sim + tuning)
+shipped.** The verdict engine (slice 4) and the design pass (slice 5) are
+next.
 
 ## Commands
 
@@ -14,6 +15,41 @@ npm run data:build:offline   # rebuild from cache only, no network
 npm test                     # vitest — percentile, tags, cohorts, loaders
 npm run dev / build / preview
 ```
+
+## The simulation (slice 3)
+
+`src/game/sim.ts` implements section 6 verbatim: weighted base
+(QB .30 / RB .12 / WR1 .16 / WR2 .12 / EDGE .17 / DB .13), weakest-link
+blend (85/15), chemistry clamped to ±8, per-week clipped-normal opponents,
+logistic win probability, 17 seeded Bernoulli draws. Same (roster, seed) →
+same season, always.
+
+`src/game/chemistry.ts` implements the six section 6 rules from tags and
+roster facts (badge labels in parentheses): 2+ picks same franchise
+(+3 SAME LOCKER ROOM), all picks within a 15-year window (+2 TIGHT ERA),
+gunslinger QB + vertical WR (+3 VERTICAL GAME), both WRs alphas
+(-4 TARGET COMPETITION), workhorse RB + high-volume QB
+(-3 NOT ENOUGH FOOTBALLS), elite EDGE + ball-hawk DB
+(+2 PRESSURE INTO PICKS). Rules evaluate on partial rosters, so badges show
+live during the draft — direction and reason visible, formula hidden.
+
+### Tuning (`npm run sim:tune`)
+
+The harness drafts rosters through the real state machine with seeded
+random choices, so the tuned distribution matches actual play. Finding:
+real rosters center near **T = 60** (p5 39, p50 60, p95 82.5) — percentile
+scores, the weakest link, and thin franchise-era pools all pull down — so
+the spec's opponent mean of 78 is unreachable and the opponent distribution
+slides down as a block (clip bounds keep the spec's −18/+17 shape). Weights,
+weakest-link share, and the +2.5 bonus stay locked.
+
+**Tuned params** (baked into `DEFAULT_SIM_PARAMS`, pinned by a test):
+divisor **14** (spec 15), opponents **normal(58, 7) clipped [40, 75]**
+(spec 78, 7, [60, 95]). Confirmed on 100k rosters: **17-0 = 1.26%,
+mode = 11 wins, mean = 9.65** — inside the spec target (1-2% perfect,
+mode 10-11). The 20k-vs-100k mode can drift on this flat-topped
+distribution, so the harness confirms candidates on 100k and keeps the
+first that holds.
 
 ## The core loop (slice 2)
 
